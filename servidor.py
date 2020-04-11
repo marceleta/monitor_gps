@@ -57,6 +57,7 @@ class Servidor():
     def _finaliza_servidor(self):
         self._loop_servidor = False
         self.selector.close()
+        Log.info('finalizando servidor')
         sys.exit()        
 
     def _fechar_conexao(self, conn):
@@ -64,6 +65,8 @@ class Servidor():
         del self.current_peers[conn.fileno()]
         self.selector.unregister(conn)
         conn.close()
+        log = 'fechando conexao com: '+ peername
+        Log.info(log)
 
 
     def _rodar_servidor(self):
