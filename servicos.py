@@ -2,8 +2,22 @@ import serial
 import pynmea2
 import datetime
 import time
+from threading import Thread
 
 from modelos import DadosColetados
+
+
+class ThreadMonitoramento(Thread):
+
+    def __init__(self):
+        Thread.__init__(self)
+        self.monitoramento = Monitoramento()
+
+    def run(self):
+        self.monitoramento.executar()
+
+    def monitoramento(self):
+        return self.monitoramento()
 
 
 

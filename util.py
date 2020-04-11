@@ -1,6 +1,3 @@
-import json
-import hashlib
-import datetime
 import logging
 
 logging.basicConfig(level=logging.INFO, filename='monitoramento.log', filemode='a',
