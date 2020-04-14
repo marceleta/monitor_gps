@@ -14,7 +14,7 @@ class Servidor():
     def __init__(self, host, port, listen):
         self.main_socket = socket.socket()
         self.main_socket.bind((host, port))
-        self.main_socket.listen(100)
+        self.main_socket.listen(listen)
         self.main_socket.setblocking(False)
 
         self.selector = selectors.DefaultSelector()
@@ -70,8 +70,7 @@ class Servidor():
 
 
     def _rodar_servidor(self):
-        log = 'Iniciado loop do servidor'
-        Log.info(log)
+        Log.info('Iniciado loop do servidor')
 
         while self._loop_servidor:
             eventos = self.selector.select(timeout=0.2)
@@ -80,7 +79,7 @@ class Servidor():
                 handler(key.fileobj, mask)
 
 
-    def iniciar_servidor(self):
+    def iniciar(self):
         Log.info('Iniciando thread do servidor')
         self.thread = threading.Thread(target=self._rodar_servidor)
         self.thread.start()

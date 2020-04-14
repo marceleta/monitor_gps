@@ -16,6 +16,7 @@ class ThreadMonitoramento(Thread):
     def run(self):
         self.monitoramento.executar()
 
+    @property
     def monitoramento(self):
         return self.monitoramento()
 
@@ -44,4 +45,7 @@ class Monitoramento():
 
     def parar(self):
         self._loop_execucao = False
+
+    def iniciar(self):
+        self._loop_execucao = True
 
