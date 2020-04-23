@@ -54,6 +54,7 @@ class Controle():
         except:
             Log.info('_lista_por_data: formato da data incorreto')
 
+        
 
         return resposta
         
@@ -72,6 +73,8 @@ class Controle():
             Log.info('Criando base de dados')
             dados.create_table()
 
+        Log.info('Banco de dados criado')
+
     def _inicia_monitor(self):
 
         if self._thread_monitor != None:
@@ -80,14 +83,20 @@ class Controle():
         self._thread_monitor = ThreadMonitor()
         self._thread_monitor.start()
 
+        Log.info('Thread monitoramento iniciada')
+
     def _parar_monitor(self):
         self._monitor = self._thread_monitor.monitor
         self._monitor.parar()
         self._thread_monitor = None
 
+        Log.info('Thread monitoramento parada')
+
     def _parar_servico(self):
         self._parar_monitor()
         self._is_rodando_app = True
+
+        Log.info('Desligando programa')
 
 
     def cont_rodando_serv(self):
