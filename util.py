@@ -1,7 +1,8 @@
 import logging
-
+from datetime import datetime
+import json
 logging.basicConfig(level=logging.INFO, filename='monitoramento.log', filemode='a',
-                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d/%m/%Y %I:%M')
+                    format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d/%m/%Y %H:%M')
 
 
 class Log:
@@ -21,3 +22,29 @@ class Log:
     @staticmethod
     def error(mensagem):
         logging.error(mensagem)
+
+class Conversor:
+
+    @staticmethod
+    def str_para_datetime(data_hora):
+        formato = '%d/%m/%Y %H:%M'
+        
+        resposta = None
+        try:
+           resposta = datetime.strptime(data_hora, formato)
+        except:
+            Log.info('str_para_datetime: erro ao formatar str para datetime')
+
+        return resposta
+
+    @staticmethod
+    def objeto_para_json(objeto):
+        resposta = None
+        if objeto != None:
+            resposta = json.dumps(objeto.__dict__)
+
+        return resposta
+
+
+
+

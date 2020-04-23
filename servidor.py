@@ -32,19 +32,21 @@ class Servidor():
         conn, addr = self.main_socket.accept()
         conn.setblocking(False)
 
-        self.current_peers[conn.fileno()] = conn.getpeersname()
+        self.current_peers[conn.fileno()] = conn.getpeername()
         self.selector.register(fileobj=conn, events=selectors.EVENT_READ,
                                 data=self.on_read)
 
     
     def on_read(self, conn, mask):
+        
         try:
             data = conn.recv(1024)
             
             if data:
-                self._controle.exec_mensagem(data)
-                conn.send(self._controle.resposta())
-
+                mensagem = data.decode('utf-8')
+                self._controle.exec_mensagem(mensagem)
+                Log.info('on_read: mensagem recebida: '+mensagem)
+                conn.send(self._controle.resposta().encode('utf-8'))
                 if self._controle.cont_rodando_serv():
                     self._finaliza_servidor()
 
@@ -65,7 +67,7 @@ class Servidor():
         del self.current_peers[conn.fileno()]
         self.selector.unregister(conn)
         conn.close()
-        log = 'fechando conexao com: '+ peername
+        log = 'fechando conexao' 
         Log.info(log)
 
 

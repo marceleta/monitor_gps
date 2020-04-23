@@ -3,45 +3,55 @@ import pynmea2
 import datetime
 import time
 from threading import Thread
+from util import Log
 
 from modelos import DadosColetados
 
 
-class ThreadMonitoramento(Thread):
+class ThreadMonitor(Thread):
 
     def __init__(self):
         Thread.__init__(self)
-        self.monitoramento = Monitoramento()
+        self.m = Monitor()
 
     def run(self):
-        self.monitoramento.executar()
+        self.m.executar()
 
     @property
-    def monitoramento(self):
-        return self.monitoramento()
+    def monitor(self):
+        return self.m
 
 
 
-class Monitoramento():
+class Monitor():
     def __init__(self):
-        self._serialPort = serial.Serial("/dev/ttyAMA0","9600",timeout=0.2)
+        self._serialPort = serial.Serial("/dev/ttyAMA0","9600",timeout=0.5)
         self._loop_execucao = True 
 
     def executar(self):
+        self._loop_execucao = True
 
-        while self._loop_execucao:
-            str = self._serialPort.readline()
-            self._salvar_dados(str)
-            time.sleep(60)
+        try:
+            while self._loop_execucao:
+                linha_serial = self._serialPort.readline()
+                linhas = linha_serial.decode('cp437')
+                gga = linhas[0:6]
+    #            print('todas as linhas: '+gga)
+                if gga == '$GPGGA':
+                    print('linha_gga: '+ linhas)
+                    self._salvar_dados(linhas)
+                    time.sleep(60)
+        except:
+            Log.info('Erro na leitura do GPS')
 
-    def _salvar_dados(self, str):
-        if str.find('GGA') > 0:
-            msg = pynmea2.parse(str)
-            dados = DadosColetados()
-            dados.latitude = msg.lat
-            dados.longitude = msg.lon
-            dados.data_hora = datetime.datetime.now()
-            dados.save()
+
+    def _salvar_dados(self, linha_gprmc):
+        gga = pynmea2.parse(linha_gprmc)
+        dados = DadosColetados()
+        dados.latitude = gga.lat
+        dados.longitude = gga.lon
+        dados.data_hora = datetime.datetime.now()
+        dados.save()
 
     def parar(self):
         self._loop_execucao = False
