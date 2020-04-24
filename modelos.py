@@ -2,9 +2,9 @@ from peewee import *
 from datetime import datetime
 from util import Conversor, Log
 import json
-nome_db = 'monitoramento.db'
+nome_db = '/home/pi/projetos/monitor_gps/monitoramento.db'
 
-db = SqliteDatabase('monitoramento.db')
+db = SqliteDatabase(nome_db)
 
 class DadosColetados(Model):
 

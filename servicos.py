@@ -25,7 +25,7 @@ class ThreadMonitor(Thread):
 
 class Monitor():
     def __init__(self):
-        self._serialPort = serial.Serial("/dev/ttyAMA0","9600",timeout=0.5)
+        self._serialPort = serial.Serial("/dev/ttyAMA0","9600",timeout=0.5)                
         self._loop_execucao = True 
 
     def executar(self):
@@ -33,16 +33,42 @@ class Monitor():
 
         try:
             while self._loop_execucao:
+                
+                if self._serialPort == None:
+                    print('if Serial')
+                    self._serialPort = serial.Serial("/dev/ttyAMA0", 9600, timeout=0.5)
+
+
                 linha_serial = self._serialPort.readline()
                 linhas = linha_serial.decode('cp437')
+                print('linha: '+linhas)
+         
                 gga = linhas[0:6]
-    #            print('todas as linhas: '+gga)
-                if gga == '$GPGGA':
-                    print('linha_gga: '+ linhas)
+                
+                if gga == '$GPRMC':
                     self._salvar_dados(linhas)
-                    time.sleep(60)
+                    
+                self._serialPort.close()
+                self._serialPort = None
+                time.sleep(10)                    
         except:
             Log.info('Erro na leitura do GPS')
+
+    
+    def _gps_esta_online(self, linha):
+        gga = pynmea2.parse(linha)
+
+        is_online = True
+        latitude = gga.lat
+        longitude = gga.lon
+
+        if latitude != '' and longitude != '':
+            is_online = False
+            Log.info('Não a dados para ser no GPS')
+
+        return is_online
+        
+
 
 
     def _salvar_dados(self, linha_gprmc):
@@ -50,8 +76,12 @@ class Monitor():
         dados = DadosColetados()
         dados.latitude = gga.lat
         dados.longitude = gga.lon
-        dados.data_hora = datetime.datetime.now()
-        dados.save()
+        
+        if dados.latitude != '' and dados.longitude != '': 
+            dados.data_hora = datetime.datetime.now()
+            dados.save()
+        else:
+            Log.info('Não há dados do GPS')
 
     def parar(self):
         self._loop_execucao = False
