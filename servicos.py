@@ -72,10 +72,12 @@ class Monitor():
 
 
     def _salvar_dados(self, linha_gprmc):
-        gga = pynmea2.parse(linha_gprmc)
+        parse = pynmea2.parse(linha_gprmc)
         dados = DadosColetados()
-        dados.latitude = gga.lat
-        dados.longitude = gga.lon
+        
+        dados.latitude = parse.lat
+        dados.longitude = parse.lon
+        dados.velocidade =  parse.spd_over_grnd
         
         if dados.latitude != '' and dados.longitude != '': 
             dados.data_hora = datetime.datetime.now()
