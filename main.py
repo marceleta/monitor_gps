@@ -4,11 +4,13 @@ import json
 
 from controle import Controle
 from util import Log
+from configuracao import Config
+
 app = Flask(__name__)
 api = Api(app)
 
 controle = Controle()
-
+servidor = Config().servidor_web
 
 class Consulta(Resource):
     
@@ -26,6 +28,6 @@ api.add_resource(Consulta, '/consulta-periodo')
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port='5000')
+    app.run(debug=True, host=servidor.host, port=servidor.porta)
 
 

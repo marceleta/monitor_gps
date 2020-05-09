@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from modelos import DadosColetados
 from util import Conversor
+from servicos import Monitor_gps, ThreadColetaDados, ThreadPersistir, Monitor
 
 class conexao():
 
@@ -62,14 +63,50 @@ class teste_consultas():
         f.write(recebi)
         f.close()
 
+class Teste_gps():
+
+        def __init__(self):
+                pass
+
+        def teste_monitor_gps(self):
+                monitor_gps = Monitor_gps()
+                dados = monitor_gps.executar()
+                print('dados: '+str(dados))
+
+class Teste_tread_coletadados():
+
+        def __init__(self):
+                self._thread = ThreadColetaDados()
+                
+
+        def teste_thread(self):
+                self._thread.start()
+
+class Teste_thread_persistir():
+
+        def __init__(self):
+                self.monitor = Monitor()
+                self._thread_coleta = ThreadColetaDados()
+                self._thread_persistir = ThreadPersistir()
+
+        def teste_thread(self):
+                self._thread_coleta.start()
+                self._thread_persistir.start()
+
+
 
 
 ##Execução dos Testes
 #teste = teste_sistema()
 #teste.conversor()
-teste = teste_consultas()
-teste.lista_por_intervalo()
-
+#teste = teste_consultas()
+#teste.lista_por_intervalo()
+#teste_gps = Teste_gps()
+#teste_gps.teste_monitor_gps()
+thread_coleta = Teste_tread_coletadados()
+thread_coleta.teste_thread()
+#thead_persistir = Teste_thread_persistir()
+#thead_persistir.teste_thread()
 
 
 

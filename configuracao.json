@@ -1,0 +1,27 @@
+{
+    "servidor_web":{
+        "porta": 5000,
+        "host": "0.0.0.0"
+
+    },
+    "gps":{
+        "porta":"/dev/ttyAMA0",
+        "baud": "9600",
+        "timeout":0.5
+    },
+    "medidor_fluxo":[
+        {
+            "descricao": "Medidor Direito",
+            "vazao":" L/min",
+            "divisor_frequencia":7.5,
+            "gpio": 16
+        },
+        {
+            "descricao": "Medidor Esquerdo",
+            "vazao":" L/min",
+            "divisor_frequencia":7.5,
+            "gpio": 18
+        }
+    ]
+
+}

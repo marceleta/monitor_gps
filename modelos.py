@@ -2,6 +2,32 @@ from peewee import *
 from datetime import datetime
 from util import Conversor, Log
 import json
+
+
+class Servidor():
+
+    def __init__(self, porta=5000, host="0.0.0.0"):
+        self.porta = porta
+        self.host  = host 
+
+    
+class Gps():
+    
+    def __init__(self, porta="/dev/ttyAMA0", baud="9600", timeout=0.5):
+        self.porta = porta
+        self.baud = baud
+        self.timeout = timeout
+
+class Medidor_fluxo():
+
+    def __init__(self, descricao="", vazao=" L/min" , gpio=16, divisor=7.5):
+        self.descricao = descricao
+        self.vazao = vazao
+        self.gpio = gpio
+        self.divisor = divisor
+
+ 
+
 nome_db = '/home/pi/projetos/monitor_gps/monitoramento.db'
 
 db = SqliteDatabase(nome_db)
@@ -16,6 +42,8 @@ class DadosColetados(Model):
     latitude   = CharField()
     longitude  = CharField()
     velocidade = CharField()
+    fluxo1     = CharField()
+    fluxo2     = CharField()
 
     def nome_db(self):
         return nome_db
@@ -35,6 +63,8 @@ class DadosColetados(Model):
                     'data_hora': c.data_hora,
                     'latitude': c.latitude,
                     'longitude': c.longitude,
+                    'fluxo1': c.fluxo1,
+                    'fluxo2': c.fluxo2,
                     'velocidade': c.velocidade
                 }
                 lista.append(dado)

@@ -2,8 +2,8 @@ import json
 import os.path
 from modelos import DadosColetados
 from util import Log
-from servicos import ThreadMonitor
-
+from servicos import ThreadColetaDados
+from configuracao import Config
 
 class Controle():
 
@@ -12,7 +12,9 @@ class Controle():
         self._criar_db()
         self._resposta = ''
         self._is_rodando_app = False
-        self._thread_monitor = ThreadMonitor()
+        self._thread_coleta = None
+        self._thread_persistir = None
+        self._config = Config() 
         self._inicia_monitor()
         
 
@@ -77,19 +79,18 @@ class Controle():
 
     def _inicia_monitor(self):
 
-        if self._thread_monitor != None:
+        if self._thread_coleta != None:
+            self._config = Config()
             self._parar_monitor()
 
-        self._thread_monitor = ThreadMonitor()
-        self._thread_monitor.start()
-
+        self._thread_coleta = ThreadColetaDados(self._config)
+        self._thread_coleta.start()
+        
         Log.info('Thread monitoramento iniciada')
 
     def _parar_monitor(self):
-        self._monitor = self._thread_monitor.monitor
-        self._monitor.parar()
-        self._thread_monitor = None
 
+        self._thread_coleta.parar()
         Log.info('Thread monitoramento parada')
 
     def _parar_servico(self):
@@ -100,7 +101,7 @@ class Controle():
 
 
     def cont_rodando_serv(self):
-        
+
         return self._is_rodando_app
 
 
