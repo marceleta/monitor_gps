@@ -1,6 +1,3 @@
-
-
-
 import serial
 from datetime import timedelta
 from datetime import datetime
@@ -10,6 +7,7 @@ from util import Log
 import RPi.GPIO as GPIO
 
 from modelos import DadosColetados
+
 
 
 class ThreadColetaDados(Thread):
@@ -49,19 +47,13 @@ class Monitor():
                                   bouncetime=20)
             lista.append(fluxo)
 
-        print('tamanho lista fluxo: %s' % len(lista))
+        #print('tamanho lista fluxo: %s' % len(lista))
         return lista
 
 
 
     def executar(self):
         dados_coletados = None
-        #GPIO.setmode(GPIO.BOARD)
-        #GPIO.setup(self._INPUT_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        #GPIO.add_event_detect(self._INPUT_PIN, 
-        #                      GPIO.RISING,
-        #                      callback=self._fluxo.pulseCallback,
-        #                      bouncetime=20)
 
         tempo60s = datetime.now() + timedelta(0, 60)
 
@@ -69,17 +61,19 @@ class Monitor():
             dados = self._gps.executar()
             print('dados gps: '+str(dados))
             agora = datetime.now() 
-            if agora > tempo60s:
+            if agora > tempo60s and dados != None:
                 dados_coletados = DadosColetados()
                 dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade = dados
                 
                 fluxo1 = self._medidores_fluxo[0]    
                 str_fluxo = str(fluxo1.taxa_fluxo()) + ' L/min'
                 dados_coletados.fluxo1 = str_fluxo
+                print('Fluxo 1'+ str(str_fluxo))
 
                 fluxo2 = self._medidores_fluxo[1]
                 str_fluxo = str(fluxo2.taxa_fluxo()) + ' L/min'
                 dados_coletados.fluxo2 = str_fluxo
+                print('Fluxo 2: '+str_fluxo)
                 
                 dados_coletados.save()
                     
@@ -109,7 +103,7 @@ class Monitor_gps():
             try:        
                 if gp == '$GPRMC':
                     self._dados_gps = self._tratar_dados(linha_rmc)
-                    print('RMC: '+linha_rmc)
+                    #print('RMC: '+linha_rmc)
             except IndexError:
                 Log.info('Não a dados do GPS')
             
@@ -148,10 +142,10 @@ class Monitor_gps():
         ###---------------------------------###
 
         
-        print('latitude: '+latitude)
-        print('longitude: '+longitude)
-        print('knot: '+knot)
-        print('km_hora: '+str(km_hora))
+        #print('latitude: '+latitude)
+        #print('longitude: '+longitude)
+        #print('knot: '+knot)
+        #print('km_hora: '+str(km_hora))
                 
         
         if latitude != '' and longitude != '': 
