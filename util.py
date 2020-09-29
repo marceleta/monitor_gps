@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 import json
-logging.basicConfig(level=logging.INFO, filename='/home/pi/projetos/monitor_gps/monitoramento.log', filemode='a',
+logging.basicConfig(level=logging.INFO, filename='/home/pi/programas/monitor_gps/monitoramento.log', filemode='a',
                     format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%d/%m/%Y %H:%M')
 
 

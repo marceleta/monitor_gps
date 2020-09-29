@@ -28,7 +28,7 @@ class Medidor_fluxo():
 
  
 
-nome_db = '/home/pi/projetos/monitor_gps/monitoramento.db'
+nome_db = '/home/pi/programas/monitor_gps/monitoramento.db'
 
 db = SqliteDatabase(nome_db)
 
