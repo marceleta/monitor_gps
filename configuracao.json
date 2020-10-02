@@ -1,4 +1,6 @@
 {
+    "wlan":"wlan0",
+    "tempo_captura":30,
     "servidor_web":{
         "porta": 5000,
         "host": "0.0.0.0"

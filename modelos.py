@@ -42,6 +42,7 @@ class DadosColetados(Model):
     latitude   = CharField()
     longitude  = CharField()
     velocidade = CharField()
+    direcao    = CharField()
     fluxo1     = CharField()
     fluxo2     = CharField()
 
@@ -65,7 +66,8 @@ class DadosColetados(Model):
                     'longitude': c.longitude,
                     'fluxo1': c.fluxo1,
                     'fluxo2': c.fluxo2,
-                    'velocidade': c.velocidade
+                    'velocidade': c.velocidade,
+                    'direcao': c.direcao
                 }
                 lista.append(dado)
 

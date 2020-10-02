@@ -7,6 +7,7 @@ from util import Log
 import RPi.GPIO as GPIO
 
 from modelos import DadosColetados
+from configuracao import Config as config
 
 
 
@@ -33,6 +34,7 @@ class Monitor():
         #self._INPUT_PIN = 16
         self._medidores_fluxo = self._config_fluxo(config.medidores_fluxo)
         self._gps = Monitor_gps(config.gps)
+        self._tempo_config = config.tempo_captura()
 
 
     def _config_fluxo(self, monitores_fluxo):
@@ -55,15 +57,15 @@ class Monitor():
     def executar(self):
         dados_coletados = None
 
-        tempo60s = datetime.now() + timedelta(0, 60)
+        tempo_captura = datetime.now() + timedelta(0, self._tempo_config)
 
         while self._loop_execucao:
             dados = self._gps.executar()
             print('dados gps: '+str(dados))
             agora = datetime.now() 
-            if agora > tempo60s and dados != None:
+            if agora > tempo_captura and dados != None:
                 dados_coletados = DadosColetados()
-                dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade = dados
+                dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade, dados_coletados.direcao, dados_coletados.data_hora = dados
                 
                 fluxo1 = self._medidores_fluxo[0]    
                 str_fluxo = str(fluxo1.taxa_fluxo()) + ' L/min'
@@ -77,7 +79,7 @@ class Monitor():
                 
                 dados_coletados.save()
                     
-                tempo60s = datetime.now() +  timedelta(0,60)
+                tempo_captura = datetime.now() +  timedelta(0, self._tempo_config)
                 
 
     def parar(self):
@@ -114,11 +116,19 @@ class Monitor_gps():
 
 
     def _tratar_dados(self, linha):
-        data = linha.split(",")
+        
         dados = None
-        knot = data[7]
-        lat = data[3]
-        lon = data[5]
+        
+        dados_gps = linha.split(",")
+        hora    = dados_gps[1]
+        dia     = dados_gps[9]
+        knot    = dados_gps[7]
+        lat     = dados_gps[3]
+        lon     = dados_gps[5]
+        direcao = dados_gps[8]
+
+        data_hora = datetime(int('20'+dia[4:6]), int(dia[2:4]), int(dia[0:2]), 
+                                int(hora[0:2]), int(hora[2:4]), int(hora[4:6]))
         
         if lat[0] == '0':
             latitude = '-' + lat[1:]
@@ -149,10 +159,10 @@ class Monitor_gps():
                 
         
         if latitude != '' and longitude != '': 
-            dados = (latitude, longitude, str_km_hora)
+            dados = (latitude, longitude, str_km_hora, direcao, data_hora)
             self._existe_dados = True
        
-
+        print('Dados: '+str(dados))
         return dados    
     
 

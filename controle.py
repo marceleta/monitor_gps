@@ -42,7 +42,9 @@ class Controle():
         return json.dumps(self._resposta)
 
     def _lista_por_data(self, mensagem):
+
         resposta = {
+            'id_monitor':self.config.id_monitor(),
             'resposta':'list_por_data',
             'conteudo':'None'
         }
@@ -52,10 +54,10 @@ class Controle():
             data_final  = mensagem['data_final']
 
             resultados = DadosColetados.por_intervalo(data_inicio, data_final)
-            resposta = {
-                'resposta': 'lst_por_data',
-                'conteudo': resultados
-            }
+
+            if len(resultados) > 0:
+                resposta['conteudo'] = resultados
+                
         except:
             Log.info('_lista_por_data: formato da data incorreto')
 
