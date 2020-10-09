@@ -60,12 +60,14 @@ class Monitor():
         tempo_captura = datetime.now() + timedelta(0, self._tempo_config)
 
         while self._loop_execucao:
+            primeiro_registro = True
             dados = self._gps.executar()
             print('dados gps: '+str(dados))
             agora = datetime.now() 
             if agora > tempo_captura and dados != None:
                 dados_coletados = DadosColetados()
                 dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade, dados_coletados.direcao, dados_coletados.data_hora = dados
+                dados_coletados.ignicao_veiculo = primeiro_registro
                 
                 fluxo1 = self._medidores_fluxo[0]    
                 str_fluxo = str(fluxo1.taxa_fluxo()) + ' L/min'
@@ -76,10 +78,12 @@ class Monitor():
                 str_fluxo = str(fluxo2.taxa_fluxo()) + ' L/min'
                 dados_coletados.fluxo2 = str_fluxo
                 print('Fluxo 2: '+str_fluxo)
+
                 
                 dados_coletados.save()
                     
                 tempo_captura = datetime.now() +  timedelta(0, self._tempo_config)
+                ignicao_veiculo = False
                 
 
     def parar(self):
@@ -190,5 +194,6 @@ class Monitor_fluxo():
             
 
 
-        return round(self._taxa_fluxo,2)       
+        return round(self._taxa_fluxo,2)
+      
 

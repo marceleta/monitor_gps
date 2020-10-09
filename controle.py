@@ -2,69 +2,23 @@ import json
 import os.path
 from time import sleep
 import sys
-from modelos import DadosColetados
 from util import Log
 from servicos import ThreadColetaDados
 from configuracao import Config
+from servidor import WebServiceThread
 
 class Controle():
 
     
     def __init__(self):
         self._criar_db()
-        self._resposta = ''
         self._is_rodando_app = False
         self._thread_coleta = None
         self._thread_web = None
         self._config = Config() 
         self._inicia_monitor()
-        
-
-    def exec_mensagem(self, msg_json):
-        
-        mensagem = json.loads(msg_json)
-        comando = mensagem['comando']
-        print('comando: '+ comando)
-        self._registar_log(comando)
-
-        if comando == 'parar_servico':
-            self._resposta = '{"resposta":"desligando"}'
-            self._parar_servico()
-        elif comando == 'lst_por_data':            
-            self._resposta = self._lista_por_data(mensagem)
-        elif comando == 'parar_monitor':
-            self._parar_servico()
-            self._resposta = "{'resposta':'monitor_parado'}"
-        else:
-            self._resposta = "{resposta:'comando_404'}"
-
-    def resposta(self):
-        return json.dumps(self._resposta)
-
-    def _lista_por_data(self, mensagem):
-
-        resposta = {
-            'id_monitor':self.config.id_monitor(),
-            'resposta':'list_por_data',
-            'conteudo':'None'
-        }
-
-        try:
-            data_inicio = mensagem['data_inicio']
-            data_final  = mensagem['data_final']
-
-            resultados = DadosColetados.por_intervalo(data_inicio, data_final)
-
-            if len(resultados) > 0:
-                resposta['conteudo'] = resultados
-                
-        except:
-            Log.info('_lista_por_data: formato da data incorreto')
-
-        
-
-        return resposta
-            
+        self.web_service = None
+        self._inicia_web_service()
 
     def _registar_log(self, msg):
         str = 'Comando recebido: '+ msg
@@ -95,6 +49,12 @@ class Controle():
         self.cont_rodando_serv = True
         
         Log.info('Thread monitoramento iniciada')
+
+    def inicia_web_service(self):
+
+        if self._web_service == None:
+            
+            self._web_service = WebServiceThread(self.)
 
     def _parar_monitor(self):
 

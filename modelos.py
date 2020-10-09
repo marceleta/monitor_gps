@@ -3,14 +3,12 @@ from datetime import datetime
 from util import Conversor, Log
 import json
 
-
 class Servidor():
-
+    
     def __init__(self, porta=5000, host="0.0.0.0"):
         self.porta = porta
         self.host  = host 
 
-    
 class Gps():
     
     def __init__(self, porta="/dev/ttyAMA0", baud="9600", timeout=0.5):
@@ -26,7 +24,6 @@ class Medidor_fluxo():
         self.gpio = gpio
         self.divisor = divisor
 
- 
 
 nome_db = '/home/pi/programas/monitor_gps/monitoramento.db'
 
@@ -38,13 +35,14 @@ class DadosColetados(Model):
         database = db
         db_table = 'dados_coletados'
 
-    data_hora  = DateTimeField(formats=['%d/%m/%Y %H:%M'], default=datetime.now)
+    data_hora  = DateTimeField(formats=['%d/%m/%Y %H:%M'])
     latitude   = CharField()
     longitude  = CharField()
     velocidade = CharField()
     direcao    = CharField()
     fluxo1     = CharField()
     fluxo2     = CharField()
+    ignicao_veiculo = BooleanField(null=True)
 
     def nome_db(self):
         return nome_db
@@ -67,7 +65,8 @@ class DadosColetados(Model):
                     'fluxo1': c.fluxo1,
                     'fluxo2': c.fluxo2,
                     'velocidade': c.velocidade,
-                    'direcao': c.direcao
+                    'direcao': c.direcao,
+                    'ignicao_veiculo': c.ignicao_veiculo
                 }
                 lista.append(dado)
 
