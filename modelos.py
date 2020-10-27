@@ -38,11 +38,12 @@ class DadosColetados(Model):
     data_hora  = DateTimeField(formats=['%d/%m/%Y %H:%M'])
     latitude   = CharField()
     longitude  = CharField()
-    velocidade = CharField()
-    direcao    = CharField()
+    velocidade = CharField()    
     fluxo1     = CharField()
     fluxo2     = CharField()
-    ignicao_veiculo = BooleanField(null=True)
+    direcao    = CharField()
+    ignicao    = BooleanField(default=False)
+    desligamento = BooleanField(default=False)
 
     def nome_db(self):
         return nome_db

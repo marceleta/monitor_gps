@@ -7,28 +7,39 @@ from util import Log
 from configuracao import Config
 from consulta import Consulta
 
-serv_config = Config().servidor_web
-
 class WebServiceThread(Thread):
 
-    def __init__(self, host='0.0.0.0', porta=5000, app):
+    def __init__(self, host='0.0.0.0', porta=5000):
         Thread.__init__(self)
+        app = Flask('Web Service')
+        self.api = Api(app)
         self.srv = make_server(host, porta, app)
         self.ctx = app.app_context()
-        self.ctx = ctx.push()
+        self.ctx.push()
+    
+    def run(self):
+        self._config()
+        Log.info('iniciando web service')
+        self.srv.serve_forever()
 
+    def stop_server(self):
+        Log.info('parando web service')
+        self.srv.shutdown()
 
+    def _config(self):
+        self.api.add_resource(ServicoStatus, '/status')
+        self.api.add_resource(ConsultaPeriodo,'/periodo')
+        
 
 class ServicoStatus(Resource):
 
     def get(self):
+        Log.info('requisicao de estatus')
         return "<html>WebService: online</html>"
 
 
 class ConsultaPeriodo(Resource):
-    def __init__(self):
-        pass
-
+    
     def post(self):
             
         mensagem = request.form['data']

@@ -1,5 +1,5 @@
 from util import Log
-from Configuracao import Config
+from configuracao import Config
 from modelos import DadosColetados
 
 class Consulta():

@@ -24,6 +24,13 @@
             "divisor_frequencia":7.5,
             "gpio": 18
         }
-    ]
+    ],
+    "controle_placa":{
+            "sensor_ignicao":32,
+            "capacitor":22,
+            "desliga_placa":19,
+            "loop_checagem":45
+    }
+
 
 }
