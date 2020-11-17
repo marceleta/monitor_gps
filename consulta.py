@@ -1,6 +1,7 @@
 from util import Log
 from configuracao import Config
 from modelos import DadosColetados
+import json, traceback
 
 class Consulta():
 
@@ -8,7 +9,6 @@ class Consulta():
         self._resposta = ''
         self._config = Config()
 
-    @staticmethod
     def exec_mensagem(self, msg_json):
         
         mensagem = json.loads(msg_json)
@@ -21,9 +21,7 @@ class Consulta():
         else:
             self._resposta = "{resposta:'comando nao encontrado'}"
 
-
-    def resposta(self):
-        return json.dumps(self._resposta)        
+        return json.dumps(self._resposta)    
 
     def _lista_por_data(self, mensagem):
     
@@ -36,15 +34,17 @@ class Consulta():
         try:
             data_inicio = mensagem['data_inicio']
             data_final  = mensagem['data_final']
-
             resultados = DadosColetados.por_intervalo(data_inicio, data_final)
+            
 
             if len(resultados) > 0:
                 resposta['conteudo'] = resultados
                 
         except:
             Log.info('_lista_por_data: formato da data incorreto')
+            e = traceback.format_exc()
+            Log.info('_lista_por_data: '+e)
         
-
+        print(resposta)
         return resposta
     

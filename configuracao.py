@@ -28,6 +28,18 @@ class Config():
 
         return servidor
 
+    def deligar_geo_sensor(self):
+        with open('configuracao.json') as arquivo:
+            _json = json.load(arquivo)
+            dados = _json['desliga_geo_sensor']
+            d = dados['desliga']
+            desliga = False
+            if d == 1:
+                desliga = True
+
+            return desliga
+
+
     
     def _config_gps(self):
         gps = Gps()
@@ -67,7 +79,7 @@ class Config():
 
     def id_monitor(self):
         id = ''
-        if self._mec_address == '':
+        if self._mac_address == '':
             with open('configuracao.json') as arquivo:
                 _json = json.load(arquivo)
                 wlan = _json['wlan']

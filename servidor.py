@@ -39,12 +39,16 @@ class ServicoStatus(Resource):
 
 
 class ConsultaPeriodo(Resource):
+
+    def __init__(self):
+        self.consulta = Consulta()
     
     def post(self):
             
         mensagem = request.form['data']
+        print(mensagem)
         Log.info('requisição recebida: '+mensagem)
-        resposta = Consulta.exec_mensagem(mensagem)
+        resposta = self.consulta.exec_mensagem(mensagem)
         
         return resposta
 

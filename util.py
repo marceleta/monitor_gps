@@ -28,10 +28,12 @@ class Conversor:
     @staticmethod
     def str_para_datetime(data_hora):
         formato = '%d/%m/%Y %H:%M'
+        #formato = '%Y-%m-%d %H:%M'
         
         resposta = None
         try:
            resposta = datetime.strptime(data_hora, formato)
+           print(resposta)
         except:
             Log.info('str_para_datetime: erro ao formatar str para datetime')
 

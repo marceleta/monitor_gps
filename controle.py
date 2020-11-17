@@ -1,7 +1,7 @@
 import json
 import os.path
 from time import sleep
-import sys
+import sys, os
 from util import Log
 from servicos import ThreadColetaDados, SensorThread
 from modelos import DadosColetados
@@ -25,13 +25,23 @@ class Controle():
 
     def start(self):
         try:
-            #self._inicia_coleta()
-            #self._inicia_web_service()
+            self._inicia_coleta()
+            self._inicia_web_service()
             self._inicia_thread_sensores()
             self._thread_check_ignicao()
+            self._thread_check_stop()
         except KeyboardInterrupt:
             print('saindo...')
-        
+
+    def stop(self):
+        Log.info('Parando Geo Sensor')
+        self._loop_verifica_ignicao = False
+        self._parar_web_service()
+        self._parar_thread_sensores()
+        self._parar_coleta()
+        sleep(60)
+        #sys.exit()
+        os.system('sudo shutdown -h now')        
 
 
     def _inicia_coleta(self):
@@ -68,12 +78,12 @@ class Controle():
     def _inicia_thread_sensores(self):
 
         if self._sensor_thread != None:
-            self._parar_sensores()
+            self._parar_thread_sensores()
 
         self._sensor_thread = SensorThread(self._config)
         self._sensor_thread.start()
 
-    def parar_thread_sensores(self):
+    def _parar_thread_sensores(self):
         if self._sensor_thread != None:
             self._sensor_thread.parar()
             self._sensor_thread = None     
@@ -89,28 +99,56 @@ class Controle():
 
         Log.info('Banco de dados criado')
 
-
+    #verifica se a ignicao esta ligada
+    # sim -> liga a coleta do GPS
+    # não -> desliga a coleta do GPS
     def _verifica_ignicao(self):
 
-        self._thread_coleta = ThreadColetaDados(self._config)
-        self._thread_coleta.start()
+        #self._thread_coleta = ThreadColetaDados(self._config)
+        #self._thread_coleta.start()
         
         self._loop_verifica_ignicao = True
 
         while self._loop_verifica_ignicao:
-            print("ignicao: "+str(self._sensor_thread.is_ignicao()))
-            if self._sensor_thread.is_ignicao() and self._thread_coleta.is_alive() == False:
-                    self._inicia_coleta()
-            else:
-                self._thread_coleta.is_ignicao(False)
+            print("controle ignicao: "+str(self._sensor_thread.is_ignicao()))
 
-            print('thread alive: '+str(self._thread_coleta.is_alive()))
+            is_ignicao = self._sensor_thread.is_ignicao()
             
+            if is_ignicao:
+                    if self._thread_coleta == None:
+                        print('if ignicao')
+                        self._inicia_coleta()
+            else:
+                if self._thread_coleta != None:
+                    print('else is_ignicao')
+                    self._thread_coleta.is_ignicao(True)
+                    sleep(45)
+                    self._parar_coleta()
+                    GPIO.cleanup()
+
+                    self._inicia_thread_sensores()
+
             sleep(10)
+            
 
 
     def _thread_check_ignicao(self):
         thread = Thread(target=self._verifica_ignicao, args=())
+        thread.start()
+
+    
+    def _verifica_desligamento(self):
+
+        while True:
+            desliga = self._config.deligar_geo_sensor()
+            print("_verifica_desligamento: "+str(desliga))
+
+            if desliga:
+                self.stop()
+            sleep(20)
+
+    def _thread_check_stop(self):
+        thread = Thread(target=self._verifica_desligamento, args=())
         thread.start()
 
 

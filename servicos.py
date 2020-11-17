@@ -40,12 +40,14 @@ class Monitor():
         self._tempo_config = config.tempo_captura()
         self._is_desligado = False
 
+        
+
     def is_desligado(self, ignicao):
         self._is_desligado = ignicao
 
 
     def _config_fluxo(self, monitores_fluxo):
-        #GPIO.setmode(GPIO.BOARD)
+        GPIO.setmode(GPIO.BOARD)
         lista = []
         for monitor in monitores_fluxo:
             #print('Monitor GPIO: '+str(monitor.gpio))
@@ -63,38 +65,40 @@ class Monitor():
 
 
     def executar(self):
+        
         dados_coletados = None
-
+        _ignicao_inicial = True
         tempo_captura = datetime.now() + timedelta(0, self._tempo_config)
-        _ignicao_veiculo = True
+        
         while self._loop_execucao:
-            
+            #print('_is_desligado: '+str(self._is_desligado))    
             dados = self._gps.executar()
-            #print('dados gps: '+str(dados))
+            print('dados gps: '+str(dados))
             agora = datetime.now() 
             if agora > tempo_captura and dados != None:
                 dados_coletados = DadosColetados()
                 dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade, dados_coletados.direcao, dados_coletados.data_hora = dados
-                dados_coletados.ignicao_veiculo = _ignicao_veiculo
+                
+                if _ignicao_inicial:
+                    dados_coletados.razao = DadosColetados.ignicao
+                    _ignicao_inicial = False
                 
                 fluxo1 = self._medidores_fluxo[0]    
-                str_fluxo = str(fluxo1.taxa_fluxo()) + ' L/min'
+                str_fluxo = str(fluxo1.taxa_fluxo())
                 dados_coletados.fluxo1 = str_fluxo
-                ##print('Fluxo 1'+ str(str_fluxo))
 
                 fluxo2 = self._medidores_fluxo[1]
-                str_fluxo = str(fluxo2.taxa_fluxo()) + ' L/min'
+                str_fluxo = str(fluxo2.taxa_fluxo())
                 dados_coletados.fluxo2 = str_fluxo
-                ##print('Fluxo 2: '+str_fluxo)
 
                 if self._is_desligado:
-                    dados_coletados.desligamento = True
+                    dados_coletados.razao = DadosColetados.desligamento
                     self._loop_execucao = False
                 
                 dados_coletados.save()
                     
                 tempo_captura = datetime.now() +  timedelta(0, self._tempo_config)
-                _ignicao_veiculo = False
+                
 
                 
                 
@@ -164,7 +168,7 @@ class Monitor_gps():
 
         metros_segundos = float(k * 0.5)
         km_hora =round(float(metros_segundos * 3.6),2)
-        str_km_hora = str(km_hora) + ' km/h'
+        str_km_hora = str(km_hora)
 
         ###---------------------------------###
 
@@ -221,15 +225,16 @@ class SensorThread(Thread):
         self._sensores = Sensores(self._config)
 
     def run(self):
+        Log.info('Iniciando sensores da placa')
         while self._loop:
-            print('ignicao: '+str(self._sensores.is_ignicao()))
-            if self._sensores.is_ignicao == 0:
+            if self._sensores.is_ignicao() == 0:
                 self._ligado = False
             else:
                 self._ligado = True
             time.sleep(self._config.loop_checagem)
 
     def parar(self):
+        Log.info('Parando sensores da placa')
         self._loop = False
 
     def is_ignicao(self):

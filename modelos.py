@@ -1,7 +1,7 @@
 from peewee import *
 from datetime import datetime
 from util import Conversor, Log
-import json
+import json, traceback
 
 class Servidor():
     
@@ -31,6 +31,22 @@ db = SqliteDatabase(nome_db)
 
 class DadosColetados(Model):
 
+    @property
+    def ignicao(self):
+        return 1
+
+    @property
+    def desligamento(self):
+        return 2
+
+    @property
+    def parada(self):
+        return 3
+
+    @property
+    def acima_velocidade(self):
+        return 4
+
     class Meta:
         database = db
         db_table = 'dados_coletados'
@@ -39,42 +55,53 @@ class DadosColetados(Model):
     latitude   = CharField()
     longitude  = CharField()
     velocidade = CharField()    
-    fluxo1     = CharField()
-    fluxo2     = CharField()
-    direcao    = CharField()
-    ignicao    = BooleanField(default=False)
-    desligamento = BooleanField(default=False)
+    fluxo1     = CharField(default=None)
+    fluxo2     = CharField(default=None)
+    sentido    = CharField(default=None)
+    razao      = BooleanField(default=False)
+    transmitido = BooleanField(default=False)
 
     def nome_db(self):
         return nome_db
 
     @staticmethod
     def por_intervalo(data_inicio, data_final):
+        
         inicio = Conversor.str_para_datetime(data_inicio)
         final = Conversor.str_para_datetime(data_final)
+
+        print('datetime inicio: '+str(inicio))
+        print('datetime final: '+str(final))
+
         consulta = None
+        
         try:
             consulta = DadosColetados.select().where(
-                (DadosColetados.data_hora >= inicio) & (DadosColetados.data_hora <= final))
+                (DadosColetados.data_hora >= inicio) and (DadosColetados.data_hora <= final))
             lista =[]
             for c in consulta:
                 dado = {
                     'id': c.id,
                     'data_hora': c.data_hora,
-                    'latitude': c.latitude,
-                    'longitude': c.longitude,
-                    'fluxo1': c.fluxo1,
-                    'fluxo2': c.fluxo2,
+                    'lat': c.latitude,
+                    'lng': c.longitude,
+                    'pressao_a':None,
+                    'pressao_b':None,
+                    'fluxo_a': c.fluxo1,
+                    'fluxo_b': c.fluxo2,
                     'velocidade': c.velocidade,
-                    'direcao': c.direcao,
-                    'ignicao_veiculo': c.ignicao_veiculo
+                    'sentido': c.sentido,
+                    'razao': c.razao
                 }
                 lista.append(dado)
 
         except:
-            Log.info('por_intervalo:Erro ao fazer consulta no banco')
+            tb = traceback.format_exc()
+            Log.error('por_intervalo traceback: '+str(tb))
 
         return lista
 
     def para_json(self):
         return Conversor.objeto_para_json(self)
+
+    
