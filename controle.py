@@ -110,17 +110,15 @@ class Controle():
         self._loop_verifica_ignicao = True
 
         while self._loop_verifica_ignicao:
-            print("controle ignicao: "+str(self._sensor_thread.is_ignicao()))
+            
 
             is_ignicao = self._sensor_thread.is_ignicao()
             
             if is_ignicao:
                     if self._thread_coleta == None:
-                        print('if ignicao')
                         self._inicia_coleta()
             else:
                 if self._thread_coleta != None:
-                    print('else is_ignicao')
                     self._thread_coleta.is_ignicao(True)
                     sleep(45)
                     self._parar_coleta()
@@ -141,8 +139,7 @@ class Controle():
 
         while True:
             desliga = self._config.deligar_geo_sensor()
-            print("_verifica_desligamento: "+str(desliga))
-
+            
             if desliga:
                 self.stop()
             sleep(20)

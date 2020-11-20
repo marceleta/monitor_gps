@@ -31,21 +31,21 @@ db = SqliteDatabase(nome_db)
 
 class DadosColetados(Model):
 
-    @property
-    def ignicao(self):
-        return 1
+    @staticmethod
+    def ignicao():
+        return 'ignicao'
 
-    @property
-    def desligamento(self):
-        return 2
+    @staticmethod
+    def desligamento():
+        return 'desligamento'
 
-    @property
-    def parada(self):
-        return 3
-
-    @property
-    def acima_velocidade(self):
-        return 4
+    @staticmethod
+    def parada():
+        return 'parada'
+        
+    @staticmethod
+    def acima_velocidade():
+        return 'acima_velocidade'
 
     class Meta:
         database = db
@@ -58,7 +58,7 @@ class DadosColetados(Model):
     fluxo1     = CharField(default=None)
     fluxo2     = CharField(default=None)
     sentido    = CharField(default=None)
-    razao      = BooleanField(default=False)
+    razao      = CharField(default='')
     transmitido = BooleanField(default=False)
 
     def nome_db(self):
@@ -69,9 +69,6 @@ class DadosColetados(Model):
         
         inicio = Conversor.str_para_datetime(data_inicio)
         final = Conversor.str_para_datetime(data_final)
-
-        print('datetime inicio: '+str(inicio))
-        print('datetime final: '+str(final))
 
         consulta = None
         

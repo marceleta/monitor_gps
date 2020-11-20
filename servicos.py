@@ -77,11 +77,16 @@ class Monitor():
             agora = datetime.now() 
             if agora > tempo_captura and dados != None:
                 dados_coletados = DadosColetados()
-                dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade, dados_coletados.direcao, dados_coletados.data_hora = dados
+                dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade, dados_coletados.sentido, dados_coletados.data_hora = dados
                 
                 if _ignicao_inicial:
-                    dados_coletados.razao = DadosColetados.ignicao
+                    dados_coletados.razao = DadosColetados.ignicao()
                     _ignicao_inicial = False
+
+                if self._is_desligado:
+                    self._is_desligado = False
+                    dados_coletados.razao = DadosColetados.desligamento()
+                    self._loop_execucao = False
                 
                 fluxo1 = self._medidores_fluxo[0]    
                 str_fluxo = str(fluxo1.taxa_fluxo())
@@ -91,9 +96,7 @@ class Monitor():
                 str_fluxo = str(fluxo2.taxa_fluxo())
                 dados_coletados.fluxo2 = str_fluxo
 
-                if self._is_desligado:
-                    dados_coletados.razao = DadosColetados.desligamento
-                    self._loop_execucao = False
+                
                 
                 dados_coletados.save()
                     
@@ -146,7 +149,7 @@ class Monitor_gps():
         knot    = dados_gps[7]
         lat     = dados_gps[3]
         lon     = dados_gps[5]
-        direcao = dados_gps[8]
+        sentido = dados_gps[8]
 
         data_hora = datetime(int('20'+dia[4:6]), int(dia[2:4]), int(dia[0:2]), 
                                 int(hora[0:2]), int(hora[2:4]), int(hora[4:6]))
@@ -172,18 +175,33 @@ class Monitor_gps():
 
         ###---------------------------------###
 
-        
-        #print('latitude: '+latitude)
-        #print('longitude: '+longitude)
-        #print('knot: '+knot)
-        #print('km_hora: '+str(km_hora))
-                
-        
-        if latitude != '' and longitude != '': 
-            dados = (latitude, longitude, str_km_hora, direcao, data_hora)
-            self._existe_dados = True
        
-        #print('Dados: '+str(dados))
+        if latitude != '' and longitude != '':
+
+            lat_decimais = latitude[-8:]
+            lat_graus = latitude[0:2]
+
+            lat_decimais_f = float(lat_decimais) / 60
+            lat_graus_f = float(lat_graus)
+
+            if lat_graus_f < 0:
+                lat_decimais_f = lat_decimais_f * (-1)
+            
+            lat_graus_f = lat_graus_f + lat_decimais_f
+
+            lng_decimais = longitude[-8:]
+            lng_graus = longitude[0:3]
+
+            lng_decimais_f = float(lng_decimais) / 60
+            lng_graus_f = float(lng_graus)
+
+            if lng_graus_f < 0:
+                lng_decimais_f = lng_decimais_f * (-1)
+
+            lng_graus_f = lng_graus_f + lng_decimais_f
+
+            dados = (round(lat_graus_f, 6), round(lng_graus_f, 6), str_km_hora, sentido, data_hora)
+            self._existe_dados = True
 
         return dados    
     
