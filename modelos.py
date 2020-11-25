@@ -32,20 +32,25 @@ db = SqliteDatabase(nome_db)
 class DadosColetados(Model):
 
     @staticmethod
+    def sem_ocorrencia():
+        return '0'
+
+    @staticmethod
     def ignicao():
-        return 'ignicao'
+        return '1'
 
     @staticmethod
     def desligamento():
-        return 'desligamento'
+        return '2'
 
     @staticmethod
     def parada():
-        return 'parada'
+        return '3'
         
     @staticmethod
     def acima_velocidade():
-        return 'acima_velocidade'
+        return '4'
+ 
 
     class Meta:
         database = db
@@ -97,6 +102,18 @@ class DadosColetados(Model):
             Log.error('por_intervalo traceback: '+str(tb))
 
         return lista
+    @staticmethod
+    def enviados_sucesso(lista_ids):
+
+        for id in lista_ids:
+            linha = DadosColetados.select().where(DadosColetados.id == id)
+            linha.transmitido = True
+            linha.salve()
+
+    @staticmethod
+    def dados_nao_enviados():
+        return DadosColetados.select().where(DadosColetados.transmitido == False)
+
 
     def para_json(self):
         return Conversor.objeto_para_json(self)

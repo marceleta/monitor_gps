@@ -5,6 +5,7 @@ import time
 from threading import Thread
 from util import Log
 import RPi.GPIO as GPIO
+import subprocess
 
 from modelos import DadosColetados
 from configuracao import Config as config
@@ -77,6 +78,8 @@ class Monitor():
             agora = datetime.now() 
             if agora > tempo_captura and dados != None:
                 dados_coletados = DadosColetados()
+                dados_coletados.razao = DadosColetados.sem_ocorrencia()
+
                 dados_coletados.latitude, dados_coletados.longitude, dados_coletados.velocidade, dados_coletados.sentido, dados_coletados.data_hora = dados
                 
                 if _ignicao_inicial:
@@ -286,6 +289,13 @@ class Sensores():
 
     def desliga_placa(self):
         GPIO.output(self._config.desliga_placa, GPIO.HIGH)
+
+
+
+
+
+
+
     
 
 

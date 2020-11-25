@@ -7,6 +7,7 @@ from util import Log
 from configuracao import Config
 from consulta import Consulta
 
+
 class WebServiceThread(Thread):
 
     def __init__(self, host='0.0.0.0', porta=5000):

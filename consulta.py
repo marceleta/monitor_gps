@@ -41,9 +41,9 @@ class Consulta():
                 resposta['conteudo'] = resultados
                 
         except:
-            Log.info('_lista_por_data: formato da data incorreto')
+            Log.error('_lista_por_data: formato da data incorreto')
             e = traceback.format_exc()
-            Log.info('_lista_por_data: '+e)
+            Log.error('_lista_por_data: '+e)
         
         print(resposta)
         return resposta

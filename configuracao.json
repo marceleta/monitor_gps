@@ -1,6 +1,7 @@
 {
     "wlan": "wlan0",
     "tempo_captura": 30,
+    "tempo_espera_envio": 120,
     "servidor_web": {
         "porta": 5000,
         "host": "0.0.0.0"
@@ -32,5 +33,11 @@
     },
     "desliga_geo_sensor": {
         "desliga": 0
-    }
+    },
+    "envio_dados":[
+        {
+            "servidor":"35.199.78.129",
+            "url_envio":"/posicoes/create"
+        }
+    ]
 }

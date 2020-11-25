@@ -16,14 +16,25 @@ class Config():
         self.servidor = Servidor()
         self.host = '0.0.0.0'
         self.porta = 5000
+        self.servidor_envio = {}
+        self.tempo_espera_envio = 60
 
 
     def _config_servidor(self):
         with open('configuracao.json') as arquivo:
             _json = json.load(arquivo)
+            # Servidor interno
             dados = _json['servidor_web']
             self.porta = dados['porta']
             self.host = dados['host']
+            # Servidor de envio
+            dados = _json['envio_dados']
+            self.servidor_envio['servidor'] = dados['servidor']
+            self.servidor_envio['url_envio'] = dados['url_envio']
+            # tempo para tentativas de envio de dados
+            dados = _json['tempo_espera_envio']
+            self.tempo_espera_envio = dados
+
 
 
         return servidor
@@ -102,6 +113,12 @@ class Config():
             _tempo_captura = _json['tempo_captura']
 
         return _tempo_captura
+
+    def servidor_envio(self):
+        return self.servidor_envio
+
+    def tempo_espera_envio(self):
+        return tempo_espera_envio
 
 
 

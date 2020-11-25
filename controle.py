@@ -1,6 +1,7 @@
 import json
 import os.path
 from time import sleep
+from datetime import datetime, timedelta
 import sys, os
 from util import Log
 from servicos import ThreadColetaDados, SensorThread
@@ -10,6 +11,7 @@ from servidor import WebServiceThread
 from time import sleep
 from threading import Thread
 import RPi.GPIO as GPIO
+from arquivo import Arquivo, EnvioWeb
 
 class Controle():
 
@@ -147,6 +149,35 @@ class Controle():
     def _thread_check_stop(self):
         thread = Thread(target=self._verifica_desligamento, args=())
         thread.start()
+
+    def envio_dados(self, dados_envio):
+        config = self._config.envio_dados()
+        servidor = config['servidor']
+        url = config['url_envio']
+        path_envio = servidor + url
+
+        envio_web = EnvioWeb(servidor)
+
+        loop = True
+        tempo_loop = datetime.now() + timedelta(0, int(self._config.tempo_espera_envio()))
+
+        while loop:
+
+            if envio_web.status_servidor():
+                resposta = envio_web.enviar(dados_envio, path_envio)
+                if resposta:
+                    loop = False
+
+            sleep(20)
+            agora = datetime.now()
+            if agora > tempo_loop:
+                loop = False
+
+
+    def _
+
+
+
 
 
     def cont_rodando_serv(self):
