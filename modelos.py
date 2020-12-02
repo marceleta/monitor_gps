@@ -80,20 +80,19 @@ class DadosColetados(Model):
         try:
             consulta = DadosColetados.select().where(
                 (DadosColetados.data_hora >= inicio) and (DadosColetados.data_hora <= final))
-            lista =[]
             for c in consulta:
                 dado = {
-                    'id': c.id,
-                    'data_hora': c.data_hora,
-                    'lat': c.latitude,
-                    'lng': c.longitude,
-                    'pressao_a':None,
-                    'pressao_b':None,
-                    'fluxo_a': c.fluxo1,
-                    'fluxo_b': c.fluxo2,
-                    'velocidade': c.velocidade,
-                    'sentido': c.sentido,
-                    'razao': c.razao
+                    "id": c.id,
+                    "data_hora": c.data_hora,
+                    "lat": c.latitude,
+                    "lng": c.longitude,
+                    "pressao_a":0,
+                    "pressao_b":0,
+                    "fluxo_a": c.fluxo1,
+                    "fluxo_b": c.fluxo2,
+                    "velocidade": c.velocidade,
+                    "sentido": c.sentido,
+                    "razao": c.razao
                 }
                 lista.append(dado)
 
@@ -111,10 +110,34 @@ class DadosColetados(Model):
             linha.salve()
 
     @staticmethod
-    def dados_nao_enviados():
-        return DadosColetados.select().where(DadosColetados.transmitido == False)
+    def nao_enviados():
+        lista = []
+        try:
+            consulta = DadosColetados.select().where(DadosColetados.transmitido == False)
+            for c in consulta:
+                if c.sentido == '':
+                    c.sentido = '0'
+                dado = {
+                    "id": c.id,
+                    "data_hora": c.data_hora,
+                    "lat": c.latitude,
+                    "lng": c.longitude,
+                    "pressao_a":0,
+                    "pressao_b":0,
+                    "fluxo_a": c.fluxo1,
+                    "fluxo_b": c.fluxo2,
+                    "velocidade": c.velocidade,
+                    "sentido": c.sentido,
+                    "razao": c.razao
+                }
+                lista.append(dado)
+        except:
+            e = traceback.format_exc()
+            Log.error('dados_nao_enviados: '+e)
+            print(e)
 
-
+        return lista
+   
     def para_json(self):
         return Conversor.objeto_para_json(self)
 

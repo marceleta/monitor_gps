@@ -2,3 +2,5 @@
 *.log
 *.pyc
 *.bkp
+*.json
+*.txt

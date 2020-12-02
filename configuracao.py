@@ -16,7 +16,6 @@ class Config():
         self.servidor = Servidor()
         self.host = '0.0.0.0'
         self.porta = 5000
-        self.servidor_envio = {}
         self.tempo_espera_envio = 60
 
 
@@ -29,15 +28,21 @@ class Config():
             self.host = dados['host']
             # Servidor de envio
             dados = _json['envio_dados']
-            self.servidor_envio['servidor'] = dados['servidor']
-            self.servidor_envio['url_envio'] = dados['url_envio']
+            self.servidor_de_envio['servidor'] = dados['servidor']
+            self.servidor_de_envio['url_envio'] = dados['url_envio']
             # tempo para tentativas de envio de dados
             dados = _json['tempo_espera_envio']
             self.tempo_espera_envio = dados
 
+    def servidor_envio(self):
+        servidor_envio = {}
+        with open('configuracao.json') as arquivo:
+            _json = json.load(arquivo)
+            dados = _json['envio_dados']
+            servidor_envio['servidor'] = dados['servidor']
+            servidor_envio['url_envio'] = dados['url_envio']
 
-
-        return servidor
+        return servidor_envio
 
     def deligar_geo_sensor(self):
         with open('configuracao.json') as arquivo:
@@ -114,11 +119,12 @@ class Config():
 
         return _tempo_captura
 
-    def servidor_envio(self):
-        return self.servidor_envio
-
     def tempo_espera_envio(self):
-        return tempo_espera_envio
+        with open('configuracao.json') as arquivo:
+            _json = json.load(arquivo)
+            dados =_json['tempo_espera_envio']
+            self.tempo_espera_envio = dados
+        return self.tempo_espera_envio
 
 
 

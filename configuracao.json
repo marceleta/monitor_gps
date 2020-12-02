@@ -34,10 +34,9 @@
     "desliga_geo_sensor": {
         "desliga": 0
     },
-    "envio_dados":[
-        {
-            "servidor":"35.199.78.129",
-            "url_envio":"/posicoes/create"
-        }
-    ]
+    "envio_dados":{
+        "servidor":"http://35.199.78.129",
+        "url_envio":"/posicoes"
+        
+    }
 }

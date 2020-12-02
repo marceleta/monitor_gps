@@ -10,8 +10,9 @@ from configuracao import Config
 from servidor import WebServiceThread
 from time import sleep
 from threading import Thread
+import traceback
 import RPi.GPIO as GPIO
-from arquivo import Arquivo, EnvioWeb
+from arquivo import Arquivo, ThreadTransmissao
 
 class Controle():
 
@@ -21,6 +22,8 @@ class Controle():
         self._is_rodando_app = False
         self._thread_coleta = None
         self._thread_web = None
+        self._thread_envia_posicoes = None
+        self._thread_transmitir = None
         self._sensor_thread = None
         self._config = Config() 
         self._web_service = None
@@ -37,13 +40,16 @@ class Controle():
 
     def stop(self):
         Log.info('Parando Geo Sensor')
-        self._loop_verifica_ignicao = False
-        self._parar_web_service()
-        self._parar_thread_sensores()
-        self._parar_coleta()
-        sleep(60)
-        #sys.exit()
-        os.system('sudo shutdown -h now')        
+        try:
+            self._loop_verifica_ignicao = False
+            self._parar_web_service()
+            self._parar_thread_sensores()
+            self._parar_coleta()
+            sleep(60)
+            os.system('sudo shutdown -h now')
+        except:
+            tb = traceback.format_exc()
+            Log.error('stop: '+tb)        
 
 
     def _inicia_coleta(self):
@@ -106,9 +112,6 @@ class Controle():
     # não -> desliga a coleta do GPS
     def _verifica_ignicao(self):
 
-        #self._thread_coleta = ThreadColetaDados(self._config)
-        #self._thread_coleta.start()
-        
         self._loop_verifica_ignicao = True
 
         while self._loop_verifica_ignicao:
@@ -119,13 +122,21 @@ class Controle():
             if is_ignicao:
                     if self._thread_coleta == None:
                         self._inicia_coleta()
+
+                    self._parar_thread_transmitir()
             else:
                 if self._thread_coleta != None:
                     self._thread_coleta.is_ignicao(True)
                     sleep(45)
                     self._parar_coleta()
-                    GPIO.cleanup()
 
+                if self._thread_transmitir == None:
+                        self._thread_transmitir()
+
+                if self._thread_transmitir.is_alive() == False:
+                    self.stop()
+
+                    GPIO.cleanup()
                     self._inicia_thread_sensores()
 
             sleep(10)
@@ -150,41 +161,40 @@ class Controle():
         thread = Thread(target=self._verifica_desligamento, args=())
         thread.start()
 
-    def envio_dados(self, dados_envio):
-        config = self._config.envio_dados()
-        servidor = config['servidor']
-        url = config['url_envio']
-        path_envio = servidor + url
-
-        envio_web = EnvioWeb(servidor)
-
-        loop = True
-        tempo_loop = datetime.now() + timedelta(0, int(self._config.tempo_espera_envio()))
-
-        while loop:
-
-            if envio_web.status_servidor():
-                resposta = envio_web.enviar(dados_envio, path_envio)
-                if resposta:
-                    loop = False
-
-            sleep(20)
-            agora = datetime.now()
-            if agora > tempo_loop:
-                loop = False
-
-
-    def _
-
-
-
-
-
     def cont_rodando_serv(self):
 
         return self._is_rodando_app
 
+    #cria o arquivo estruturado para o envio pela web
+    def _cria_json_dados(self):
+        lista = DadosColetados.nao_enviados()
+        resposta = {
+            "id_monitor":self._config.id_monitor(),
+            "resposta":"list_por_data",
+            "conteudo":lista
+        }
+        dumps = json.dumps(resposta)
 
+        return dumps
 
+    def cria_arquivo_dados(self, posicoes_json):
+        info_arquivo = Arquivo.criar_arquivo(posicoes_json)
 
+        return info_arquivo
 
+    # verifica se o servidor esta online e envia os dados
+    # caso o servidor responda com um numero maior que 0 e atualizado a flag transmitida no banco
+
+   
+
+    def _thread_transmitir(self):
+        info_arquivo = self.cria_arquivo_dados()
+        if self._thread_transmitir != None:
+            self._thread_transmitir = ThreadTransmissao()
+
+        self._thread_transmitir.start()
+
+    def _parar_thread_transmitir(self):
+        if self._thread_transmitir != None:
+            self._thread_transmitir.parar()
+            self._thread_transmitir = None
