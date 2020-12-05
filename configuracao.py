@@ -34,15 +34,16 @@ class Config():
             dados = _json['tempo_espera_envio']
             self.tempo_espera_envio = dados
 
-    def servidor_envio(self):
-        servidor_envio = {}
+    def servidor_transmissao(self):
+        config = {}
         with open('configuracao.json') as arquivo:
             _json = json.load(arquivo)
             dados = _json['envio_dados']
-            servidor_envio['servidor'] = dados['servidor']
-            servidor_envio['url_envio'] = dados['url_envio']
+            config['servidor'] = dados['servidor']
+            config['url_envio'] = dados['url_envio']
+            config['tempo_espera_envio'] = dados['tempo_espera_envio']
 
-        return servidor_envio
+        return config
 
     def deligar_geo_sensor(self):
         with open('configuracao.json') as arquivo:

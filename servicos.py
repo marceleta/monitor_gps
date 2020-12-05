@@ -5,7 +5,8 @@ import time
 from threading import Thread
 from util import Log
 import RPi.GPIO as GPIO
-import subprocess
+import subprocess, requests, json, traceback
+from time import sleep
 
 from modelos import DadosColetados
 from configuracao import Config as config
@@ -50,15 +51,19 @@ class Monitor():
     def _config_fluxo(self, monitores_fluxo):
         GPIO.setmode(GPIO.BOARD)
         lista = []
-        for monitor in monitores_fluxo:
-            #print('Monitor GPIO: '+str(monitor.gpio))
-            fluxo = Monitor_fluxo()
-            GPIO.setup(monitor.gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(monitor.gpio,
-                                  GPIO.RISING,
-                                  callback=fluxo.pulseCallback,
-                                  bouncetime=20)
-            lista.append(fluxo)
+        try:
+            for monitor in monitores_fluxo:
+                #print('Monitor GPIO: '+str(monitor.gpio))
+                fluxo = Monitor_fluxo()
+                GPIO.setup(monitor.gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.add_event_detect(monitor.gpio,
+                                    GPIO.RISING,
+                                    callback=fluxo.pulseCallback,
+                                    bouncetime=20)
+                lista.append(fluxo)
+        except:
+            tb = traceback.print_exc()
+            Log.error('_config_fluxo: '+tb)
 
         #print('tamanho lista fluxo: %s' % len(lista))
         return lista
@@ -107,10 +112,14 @@ class Monitor():
                 
 
                 
-                
+
+    def _limpar_gpio(self):
+        for medidor in self._config.medidores_fluxo:
+            GPIO.cleanup(medidor.gpio)
 
     def parar(self):
         self._loop_execucao = False
+        self._limpar_gpio()
 
     def iniciar(self):
         self._loop_execucao = True
@@ -249,13 +258,16 @@ class SensorThread(Thread):
         Log.info('Iniciando sensores da placa')
         while self._loop:
             if self._sensores.is_ignicao() == 0:
+                # ignicao do veiculo desligada
                 self._ligado = False
             else:
+                # ignicao do veiculo ligada
                 self._ligado = True
             time.sleep(self._config.loop_checagem)
 
     def parar(self):
         Log.info('Parando sensores da placa')
+        self._sensores.limpar_gpio()
         self._loop = False
 
     def is_ignicao(self):
@@ -289,6 +301,149 @@ class Sensores():
 
     def desliga_placa(self):
         GPIO.output(self._config.desliga_placa, GPIO.HIGH)
+
+    def limpar_gpio(self):
+        GPIO.cleanup([self._config.sensor_ignicao, self._config.capacitor, self._config.desliga_placa])
+
+
+class Transmissao():
+
+    def __init__(self, config):
+        self._host = config['servidor']
+        self._path_envio = config['url_envio']
+        self._tempo_espera_envio = int(config['tempo_espera_envio'])
+        self._loop = True
+        self._url = 'http://'+ self._host + self._path_envio
+        self.is_sucesso = None 
+
+
+
+    def _status_servidor(self):
+        ping = subprocess.Popen(['ping', '-c', '1', self._host], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+        out, error = ping.communicate()
+        
+        saida = out.decode()
+        resultado = saida.find('100% packet loss')
+
+        if resultado == -1:
+            resposta = True
+        else:
+            resposta = False
+
+        return resposta
+
+    def _transmitir(self, dados):
+        print('_transmitir')
+        md5 = dados['md5']
+        path_arquivo = dados['arquivo']
+
+        formulario = {}
+        formulario['md5'] = md5
+
+        session = requests.session()
+        headers = {
+                    'origin': 'http://35.199.78.129/posicoes',
+                    'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36"
+                    }
+
+        form = session.get(self._url, headers=headers)
+        
+        #csrf_token = re.findall(r'<input type="hidden" name="_token" value="(.*)"', form.text)[0]
+
+        #print('_token: '+csrf_token)
+        
+        #formulario['_token'] = csrf_token
+                
+        files = {'jsonFile': open(path_arquivo, 'rb')}
+
+        
+        response = session.post(self._url, files=files, data=formulario)
+
+        return response
+
+    # verifica se o servidor esta online e envia os dados
+    # caso o servidor responda com um numero maior que 0 e atualizado a flag transmitida no banco
+    def posicoes(self, dados_envio):
+
+        tempo_loop = datetime.now() + timedelta(0, int(self._tempo_espera_envio))
+
+        while self._loop:
+
+            if self._status_servidor():
+                response = self._transmitir(dados_envio)
+                print('response: '+str(response.text))
+                resposta = int(response.text)
+                
+
+                if resposta > 0:
+                    print('posicoes: enviado: true')
+                    self._sucesso(dados_envio)
+                    Log.info('loop_envio: posicoes enviadas com sucesso')
+                    self._loop = False
+                    self.is_sucesso = True                    
+                else:
+                    self.is_sucesso = False
+
+            
+            agora = datetime.now()            
+            if agora > tempo_loop:
+                self._loop = False
+            
+            sleep(20)
+
+    
+    # prepara a lista de ids para alterar a flag de transmitido
+    def _sucesso(self, dados_enviados):
+        banco = DadosColetados()        
+        
+        arquivo = open(dados_enviados['arquivo'], 'r')
+        dados = arquivo.read()
+        _json = json.loads(dados)
+        print('_json: '+str(_json))
+
+
+        conteudo = _json['conteudo']
+        transmitidos = []
+        for linha in conteudo:
+            str_id = linha['id']
+            id = int(str_id)
+            transmitido = {'id':id,'transmitido':1} 
+            transmitidos.append(transmitido)
+
+        
+        try:
+            banco.transmitidos_sucesso(transmitidos)
+            Log.info('Dados enviados com sucesso ao servidor')
+        except:
+            tb = traceback.format_exc()
+            Log.error('_sucesso_envio: '+tb)
+
+
+
+
+class ThreadTransmissao(Thread):
+
+    def __init__(self, config, arquivo):
+        Thread.__init__(self)
+        self._transmissao = Transmissao(config)
+        self._arquivo = arquivo
+
+    def run(self):
+        self._transmissao.posicoes(self._arquivo)
+
+    # None - Não foi feito a tentativa
+    # True - transmitido com sucesso
+    # False - erro na transmissao
+    def status(self):
+        return self._transmissao.is_sucesso
+
+    def parar(self):
+        self._transmissao._loop = False
+    
+
+
+            
+
 
 
 

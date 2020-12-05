@@ -1,4 +1,5 @@
 from peewee import *
+from peewee import Model
 from datetime import datetime
 from util import Conversor, Log
 import json, traceback
@@ -25,11 +26,18 @@ class Medidor_fluxo():
         self.divisor = divisor
 
 
+
 nome_db = '/home/pi/programas/monitor_gps/monitoramento.db'
 
 db = SqliteDatabase(nome_db)
 
-class DadosColetados(Model):
+class BaseModel(Model):
+    class Meta:
+            database = db
+            db_table = 'dados_coletados'
+
+
+class DadosColetados(BaseModel):
 
     @staticmethod
     def sem_ocorrencia():
@@ -51,11 +59,6 @@ class DadosColetados(Model):
     def acima_velocidade():
         return '4'
  
-
-    class Meta:
-        database = db
-        db_table = 'dados_coletados'
-
     data_hora  = DateTimeField(formats=['%d/%m/%Y %H:%M'])
     latitude   = CharField()
     longitude  = CharField()
@@ -101,16 +104,25 @@ class DadosColetados(Model):
             Log.error('por_intervalo traceback: '+str(tb))
 
         return lista
-    @staticmethod
-    def enviados_sucesso(lista_ids):
+    
+    def transmitidos_sucesso(self, transmitidos):
+        banco = DadosColetados()
 
-        for id in lista_ids:
-            linha = DadosColetados.select().where(DadosColetados.id == id)
-            linha.transmitido = True
-            linha.salve()
+        for tm in transmitidos:
+            print()
+            try:
+                query = (DadosColetados.update({DadosColetados.transmitido:True})
+                        .where(DadosColetados.id == tm['id']))
+                print(str(query))
+                query.execute()
+                
+            except:
+                tb = traceback.format_exc()
+                Log.error('enviados_sucesso: '+tb)
+        
 
     @staticmethod
-    def nao_enviados():
+    def nao_transmitidos():
         lista = []
         try:
             consulta = DadosColetados.select().where(DadosColetados.transmitido == False)

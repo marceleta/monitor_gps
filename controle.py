@@ -4,7 +4,7 @@ from time import sleep
 from datetime import datetime, timedelta
 import sys, os
 from util import Log
-from servicos import ThreadColetaDados, SensorThread
+from servicos import ThreadColetaDados, SensorThread, ThreadTransmissao
 from modelos import DadosColetados
 from configuracao import Config
 from servidor import WebServiceThread
@@ -12,7 +12,7 @@ from time import sleep
 from threading import Thread
 import traceback
 import RPi.GPIO as GPIO
-from arquivo import Arquivo, ThreadTransmissao
+from arquivo import Arquivo
 
 class Controle():
 
@@ -22,15 +22,16 @@ class Controle():
         self._is_rodando_app = False
         self._thread_coleta = None
         self._thread_web = None
-        self._thread_envia_posicoes = None
-        self._thread_transmitir = None
         self._sensor_thread = None
         self._config = Config() 
         self._web_service = None
+        self._thread_transmissao = None
 
+    # o iniciar/parar da coleta depende da ignição por isso fica em outro local: _verifica_ignicao 
     def start(self):
+        Log.info('iniciando Geo Sensor')
+        self._loop_verifica_ignicao = True
         try:
-            self._inicia_coleta()
             self._inicia_web_service()
             self._inicia_thread_sensores()
             self._thread_check_ignicao()
@@ -41,12 +42,12 @@ class Controle():
     def stop(self):
         Log.info('Parando Geo Sensor')
         try:
-            self._loop_verifica_ignicao = False
+            self._parar_coleta()            
             self._parar_web_service()
-            self._parar_thread_sensores()
-            self._parar_coleta()
-            sleep(60)
-            os.system('sudo shutdown -h now')
+            print('controle:stop')
+            Log.info('Desligando Geo Sensor')
+            #sleep(60)
+            #os.system('sudo shutdown -h now')
         except:
             tb = traceback.format_exc()
             Log.error('stop: '+tb)        
@@ -64,8 +65,11 @@ class Controle():
         Log.info('Thread monitoramento iniciada')
 
     def _parar_coleta(self):
-        self._thread_coleta.parar()
-        self._thread_coleta = None
+        
+        if self._thread_coleta != None:
+            print('parar coleta')
+            self._thread_coleta.parar()
+            self._thread_coleta = None
         Log.info('Thread monitoramento parada')
 
     def _inicia_web_service(self):
@@ -107,39 +111,51 @@ class Controle():
 
         Log.info('Banco de dados criado')
 
-    #verifica se a ignicao esta ligada
-    # sim -> liga a coleta do GPS
-    # não -> desliga a coleta do GPS
+    # verifica se a ignicao esta ligada
+    # True -> liga a coleta do GPS
+    # False -> desliga a coleta do GPS
+    #Controla a transmissao de dados
+    # Quando a ignição e desligada começa a tentativa de enviar os dados
+    # Se a ignicao for ligada espera a tentativa acabar para matar a thread de transmissao
     def _verifica_ignicao(self):
 
-        self._loop_verifica_ignicao = True
-
+        
         while self._loop_verifica_ignicao:
-            
 
             is_ignicao = self._sensor_thread.is_ignicao()
+            print('ignicao: '+str(is_ignicao))
+
+            if is_ignicao: 
+                if self._thread_coleta == None:             
+                    self._inicia_coleta()
+                    self._parar_transmissao()
+
+            else:
+                self._parar_coleta()
+                if self._thread_transmissao == None:
+                    self._inicia_transmissao()
+
+            if self._thread_transmissao != None and self._thread_transmissao.status != None:
+                self.stop()
+
+            sleep(10)
+
+            '''
             
             if is_ignicao:
                     if self._thread_coleta == None:
                         self._inicia_coleta()
+                        self.parar_transmissao()
 
-                    self._parar_thread_transmitir()
-            else:
+                    
                 if self._thread_coleta != None:
                     self._thread_coleta.is_ignicao(True)
                     sleep(45)
                     self._parar_coleta()
 
-                if self._thread_transmitir == None:
-                        self._thread_transmitir()
-
-                if self._thread_transmitir.is_alive() == False:
-                    self.stop()
-
                     GPIO.cleanup()
                     self._inicia_thread_sensores()
-
-            sleep(10)
+            '''
             
 
 
@@ -165,36 +181,45 @@ class Controle():
 
         return self._is_rodando_app
 
-    #cria o arquivo estruturado para o envio pela web
-    def _cria_json_dados(self):
-        lista = DadosColetados.nao_enviados()
-        resposta = {
+    #cria a string estruturado para o envio pela web
+    def posicoes_nao_transmitidas(self):
+        lista = DadosColetados.nao_transmitidos()
+        dados = {
             "id_monitor":self._config.id_monitor(),
-            "resposta":"list_por_data",
             "conteudo":lista
         }
-        dumps = json.dumps(resposta)
+        
 
-        return dumps
+        return dados
+    #cria o arquivo para ser enviado 
+    def arquivo_transmissao(self, posicoes_json):
+        posicoes_arquivo = Arquivo.posicoes(posicoes_json)
 
-    def cria_arquivo_dados(self, posicoes_json):
-        info_arquivo = Arquivo.criar_arquivo(posicoes_json)
+        return posicoes_arquivo
 
-        return info_arquivo
 
-    # verifica se o servidor esta online e envia os dados
-    # caso o servidor responda com um numero maior que 0 e atualizado a flag transmitida no banco
+    def _inicia_transmissao(self):
+        print('inicia transmissao')
+        config = self._config.servidor_transmissao()
 
-   
+        posicoes = self.posicoes_nao_transmitidas()
+        arquivo = self.arquivo_transmissao(posicoes)
 
-    def _thread_transmitir(self):
-        info_arquivo = self.cria_arquivo_dados()
-        if self._thread_transmitir != None:
-            self._thread_transmitir = ThreadTransmissao()
+        if self._thread_transmissao == None:
+            try:
+                self._thread_transmissao = ThreadTransmissao(config, arquivo)
+                self._thread_transmissao.start()
+            except:
+                tb = tranceback.format_exc()
+                Log.error('_inicia_transmissao: '+tb)
 
-        self._thread_transmitir.start()
+        Log.info('transmissao iniciada')
 
-    def _parar_thread_transmitir(self):
-        if self._thread_transmitir != None:
-            self._thread_transmitir.parar()
-            self._thread_transmitir = None
+    def _parar_transmissao(self):
+
+        if self._thread_transmissao != None:
+            print('para transmissao')
+            self._thread_transmissao.parar()
+            self._thread_transmissao = None
+            Log.info('transmissao parada')
+
