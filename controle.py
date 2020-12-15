@@ -4,7 +4,7 @@ from time import sleep
 from datetime import datetime, timedelta
 import sys, os
 from util import Log
-from servicos import ThreadColetaDados, SensorThread, ThreadTransmissao
+from servicos import ThreadColetaDados, SensorThread, ThreadTransmissao, Desligar
 from modelos import DadosColetados
 from configuracao import Config
 from servidor import WebServiceThread
@@ -32,20 +32,19 @@ class Controle():
         Log.info('iniciando Geo Sensor')
         self._loop_verifica_ignicao = True
         try:
-            self._inicia_web_service()
             self._inicia_thread_sensores()
             self._thread_check_ignicao()
             self._thread_check_stop()
         except KeyboardInterrupt:
             print('saindo...')
 
-    def stop(self):
+    def desligar(self):
         Log.info('Parando Geo Sensor')
         try:
-            self._parar_coleta()            
             self._parar_web_service()
-            print('controle:stop')
             Log.info('Desligando Geo Sensor')
+            desligar = Desligar()
+            #desligar.agora()
             #sleep(60)
             #os.system('sudo shutdown -h now')
         except:
@@ -67,7 +66,6 @@ class Controle():
     def _parar_coleta(self):
         
         if self._thread_coleta != None:
-            print('parar coleta')
             self._thread_coleta.parar()
             self._thread_coleta = None
         Log.info('Thread monitoramento parada')
@@ -80,12 +78,13 @@ class Controle():
         self._web_service = WebServiceThread(self._config.host, self._config.porta)
         self._web_service.start()
 
-        Log.info('iniciar web service')
+        Log.info('Inicia web service')
 
     def _parar_web_service(self):
-        self._web_service.stop_server()
-        self._web_service = None
-        Log.info('Web service parado')
+        if self._web_service != None:
+            self._web_service.stop_server()
+            self._web_service = None
+            Log.info('Web service parado')
 
     def _inicia_thread_sensores(self):
 
@@ -123,40 +122,28 @@ class Controle():
         while self._loop_verifica_ignicao:
 
             is_ignicao = self._sensor_thread.is_ignicao()
+
             print('ignicao: '+str(is_ignicao))
 
             if is_ignicao: 
-                if self._thread_coleta == None:             
+                if self._thread_coleta == None or self._thread_coleta.is_alive() == False:             
                     self._inicia_coleta()
-                    self._parar_transmissao()
+                    if self._thread_transmissao != None and self._thread_transmissao.is_alive() == False:
+                        self._parar_transmissao()
 
             else:
-                self._parar_coleta()
-                if self._thread_transmissao == None:
-                    self._inicia_transmissao()
+                if self._thread_coleta != None:
+                    self._thread_coleta.is_ignicao(is_ignicao)
+
+                if self._thread_coleta.is_alive() == False:
+                    if self._thread_transmissao == None:
+                        self._inicia_transmissao()
+
 
             if self._thread_transmissao != None and self._thread_transmissao.status != None:
-                self.stop()
+                self.desligar()
 
             sleep(10)
-
-            '''
-            
-            if is_ignicao:
-                    if self._thread_coleta == None:
-                        self._inicia_coleta()
-                        self.parar_transmissao()
-
-                    
-                if self._thread_coleta != None:
-                    self._thread_coleta.is_ignicao(True)
-                    sleep(45)
-                    self._parar_coleta()
-
-                    GPIO.cleanup()
-                    self._inicia_thread_sensores()
-            '''
-            
 
 
     def _thread_check_ignicao(self):
@@ -170,7 +157,7 @@ class Controle():
             desliga = self._config.deligar_geo_sensor()
             
             if desliga:
-                self.stop()
+                self.desligar()
             sleep(20)
 
     def _thread_check_stop(self):

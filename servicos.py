@@ -40,7 +40,7 @@ class Monitor():
         self._medidores_fluxo = self._config_fluxo(config.medidores_fluxo)
         self._gps = Monitor_gps(config.gps)
         self._tempo_config = config.tempo_captura()
-        self._is_desligado = False
+        self._is_desligado = None
 
         
 
@@ -90,11 +90,12 @@ class Monitor():
                 if _ignicao_inicial:
                     dados_coletados.razao = DadosColetados.ignicao()
                     _ignicao_inicial = False
-
-                if self._is_desligado:
-                    self._is_desligado = False
+                print('_is_desligado: '+str(self._is_desligado))
+                if self._is_desligado == False:
+                    self._is_desligado = None
                     dados_coletados.razao = DadosColetados.desligamento()
-                    self._loop_execucao = False
+                    self._loop_execucao = False                 
+
                 
                 fluxo1 = self._medidores_fluxo[0]    
                 str_fluxo = str(fluxo1.taxa_fluxo())
@@ -119,6 +120,7 @@ class Monitor():
 
     def parar(self):
         self._loop_execucao = False
+        self._gps._fechar_serial()
         self._limpar_gpio()
 
     def iniciar(self):
@@ -127,11 +129,13 @@ class Monitor():
 class Monitor_gps():
 
     def __init__(self, gps):
-        self._serialPort = serial.Serial(gps.porta, gps.baud, timeout=gps.timeout)                
+        self._gps = gps
+        self._serialPort = None                
         self._existe_dados = False
         self._dados_gps = None
+        self._iniciar_serial()
 
-    def executar(self):
+    def executar(self):        
         try:
             linha_serial = self._serialPort.readline()
             linha_rmc = linha_serial.decode('ascii')
@@ -143,12 +147,27 @@ class Monitor_gps():
                     self._dados_gps = self._tratar_dados(linha_rmc)
                     #print('RMC: '+linha_rmc)
             except IndexError:
-                Log.info('Não a dados do GPS')
-            
+                tb = traceback.format_exc()
+                Log.error('Não a dados do GPS: '+tb)
+                        
         except UnicodeDecodeError:
-            Log.info('Erro no encode do GPS')
+            self._fechar_serial()
+            sleep(2)
+            self._iniciar_serial()
+            tb = traceback.format_exc()
+            Log.error('Erro no encode do GPS: '+tb)
+            
 
         return self._dados_gps
+
+    def _iniciar_serial(self):
+        Log.info('_iniciar_serial')
+        self._serialPort = serial.Serial(self._gps.porta, self._gps.baud, timeout=self._gps.timeout)
+
+    def _fechar_serial(self):
+        Log.info('_fechar_serial')
+        self._serialPort.close()
+        self._serialPort = None                
 
 
     def _tratar_dados(self, linha):
@@ -358,7 +377,7 @@ class Transmissao():
 
         
         response = session.post(self._url, files=files, data=formulario)
-
+        Log.info('_transmitir: enviando dados')
         return response
 
     # verifica se o servidor esta online e envia os dados
@@ -371,12 +390,11 @@ class Transmissao():
 
             if self._status_servidor():
                 response = self._transmitir(dados_envio)
-                print('response: '+str(response.text))
                 resposta = int(response.text)
                 
 
                 if resposta > 0:
-                    print('posicoes: enviado: true')
+                    
                     self._sucesso(dados_envio)
                     Log.info('loop_envio: posicoes enviadas com sucesso')
                     self._loop = False
@@ -399,7 +417,6 @@ class Transmissao():
         arquivo = open(dados_enviados['arquivo'], 'r')
         dados = arquivo.read()
         _json = json.loads(dados)
-        print('_json: '+str(_json))
 
 
         conteudo = _json['conteudo']
@@ -439,6 +456,22 @@ class ThreadTransmissao(Thread):
 
     def parar(self):
         self._transmissao._loop = False
+
+
+class Desligar():
+
+    def __init__(self):
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setup(32, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(22, GPIO.OUT)
+        GPIO.setup(19, GPIO.OUT)
+
+    def agora(self):
+        GPIO.output(22, GPIO.HIGH)
+        sleep(2)
+        GPIO.output(19, GPIO.HIGH)
+        GPIO.cleanup()
+
     
 
 
