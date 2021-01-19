@@ -44,7 +44,7 @@ class Controle():
             self._parar_web_service()
             Log.info('Desligando Geo Sensor')
             desligar = Desligar()
-            #desligar.agora()
+            desligar.agora()
             #sleep(60)
             #os.system('sudo shutdown -h now')
         except:
@@ -123,14 +123,58 @@ class Controle():
 
             is_ignicao = self._sensor_thread.is_ignicao()
 
-            print('ignicao: '+str(is_ignicao))
+            #print('ignicao: '+str(is_ignicao))
 
-            if is_ignicao: 
+            if is_ignicao:
+                #print('_verifica_ignicao: if') 
                 if self._thread_coleta == None or self._thread_coleta.is_alive() == False:             
                     self._inicia_coleta()
+                    Log.info('Inicia coleta de dados GPS')
                     if self._thread_transmissao != None and self._thread_transmissao.is_alive() == False:
                         self._parar_transmissao()
+                        Log.info('Parada de transmissao de dados')
 
+            
+            else:
+                #print('_verifica_ignicao else: _thread_coleta: '+str(self._thread_coleta != None))
+
+                if self._thread_coleta != None:
+                    #self._inicia_transmissao()
+                    Log.info('Inicia transmissao de dados')
+                    self._thread_coleta.set_ignicao(False)
+                    sleep(self._config.tempo_captura() + 1)
+                    self._thread_coleta = None
+
+                if self._thread_transmissao != None and self._thread_transmissao.is_alive() == False:
+                    #self.desligar()
+                    print('desligamento')
+
+                '''
+                if self._thread_coleta != None:
+                    if self._thread_coleta.ignicao():
+                        #self._thread_coleta.set_ignicao(False)
+                        Log.info('Parada de coleta de dados GPS')
+
+                        sleep(self._config.tempo_captura() + 1)
+                        
+
+                        if self._thread_coleta.is_alive() == False:
+                            self._thread_coleta == None
+                            if self._thread_transmissao == None:
+                                self._inicia_transmissao()
+                                self._thread_coleta.set_ignicao(False)
+                                Log.info('Inicia transmissao de dados')
+                                
+                
+                if self._thread_transmissao != None and self._thread_transmissao.is_alive() == False:
+                    #self.desligar()
+                    print('desligamento')
+
+
+                    
+
+
+            
             else:
                 if self._thread_coleta != None:
                     self._thread_coleta.is_ignicao(is_ignicao)
@@ -138,11 +182,10 @@ class Controle():
                 if self._thread_coleta.is_alive() == False:
                     if self._thread_transmissao == None:
                         self._inicia_transmissao()
-
-
-            if self._thread_transmissao != None and self._thread_transmissao.status != None:
+            
+            if self._thread_transmissao != None and self._thread_transmissao.status != None and is_ignicao == False:
                 self.desligar()
-
+            '''
             sleep(10)
 
 

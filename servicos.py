@@ -26,8 +26,11 @@ class ThreadColetaDados(Thread):
     def parar(self):
         self.monitor.parar()
 
-    def is_ignicao(self, ignicao):
-        self.monitor.is_desligado(ignicao)
+    def set_ignicao(self, ignicao):
+        self.monitor.set_ignicao(ignicao)
+
+    def ignicao(self):
+        return self.monitor._ignicao
     
 
 class Monitor():
@@ -40,12 +43,18 @@ class Monitor():
         self._medidores_fluxo = self._config_fluxo(config.medidores_fluxo)
         self._gps = Monitor_gps(config.gps)
         self._tempo_config = config.tempo_captura()
-        self._is_desligado = None
+        '''
+            recebe um boleano para a ignicao do carro
+            True -> ignicao ligada
+            False -> ignicao desligada
+        '''        
+        self._ignicao = True
+        
 
         
 
-    def is_desligado(self, ignicao):
-        self._is_desligado = ignicao
+    def set_ignicao(self, ignicao):
+        self._ignicao = ignicao
 
 
     def _config_fluxo(self, monitores_fluxo):
@@ -79,8 +88,12 @@ class Monitor():
         while self._loop_execucao:
             #print('_is_desligado: '+str(self._is_desligado))    
             dados = self._gps.executar()
-            print('dados gps: '+str(dados))
-            agora = datetime.now() 
+            print('Monitor dados gps: '+str(dados))
+            agora = datetime.now()
+
+            if self._ignicao == False:
+                self._loop_execucao = False
+
             if agora > tempo_captura and dados != None:
                 dados_coletados = DadosColetados()
                 dados_coletados.razao = DadosColetados.sem_ocorrencia()
@@ -90,12 +103,13 @@ class Monitor():
                 if _ignicao_inicial:
                     dados_coletados.razao = DadosColetados.ignicao()
                     _ignicao_inicial = False
-                print('_is_desligado: '+str(self._is_desligado))
-                if self._is_desligado == False:
-                    self._is_desligado = None
+                    
+                print('executar: monitor ignicao: '+str(self._ignicao))
+                if self._ignicao == False:
+                    self._ignicao = None
                     dados_coletados.razao = DadosColetados.desligamento()
-                    self._loop_execucao = False                 
-
+                    print('dados coletados: '+str(dados_coletados.razao))
+                    
                 
                 fluxo1 = self._medidores_fluxo[0]    
                 str_fluxo = str(fluxo1.taxa_fluxo())
@@ -156,6 +170,10 @@ class Monitor_gps():
             self._iniciar_serial()
             tb = traceback.format_exc()
             Log.error('Erro no encode do GPS: '+tb)
+        except ValueError:
+            pass
+            #tb = traceback.format_exc()
+            #Log.error('Erro de conversao na base 10: '+tb)
             
 
         return self._dados_gps
@@ -333,7 +351,6 @@ class Transmissao():
         self._tempo_espera_envio = int(config['tempo_espera_envio'])
         self._loop = True
         self._url = 'http://'+ self._host + self._path_envio
-        self.is_sucesso = None 
 
 
 
@@ -398,9 +415,6 @@ class Transmissao():
                     self._sucesso(dados_envio)
                     Log.info('loop_envio: posicoes enviadas com sucesso')
                     self._loop = False
-                    self.is_sucesso = True                    
-                else:
-                    self.is_sucesso = False
 
             
             agora = datetime.now()            
@@ -447,12 +461,6 @@ class ThreadTransmissao(Thread):
 
     def run(self):
         self._transmissao.posicoes(self._arquivo)
-
-    # None - Não foi feito a tentativa
-    # True - transmitido com sucesso
-    # False - erro na transmissao
-    def status(self):
-        return self._transmissao.is_sucesso
 
     def parar(self):
         self._transmissao._loop = False

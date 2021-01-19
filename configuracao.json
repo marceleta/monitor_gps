@@ -1,6 +1,6 @@
 {
     "wlan": "wlan0",
-    "tempo_captura": 30,
+    "tempo_captura": 2,
     "servidor_web": {
         "porta": 5000,
         "host": "0.0.0.0"
@@ -28,13 +28,13 @@
         "sensor_ignicao": 32,
         "capacitor": 22,
         "desliga_placa": 19,
-        "loop_checagem": 10
+        "loop_checagem": 2
     },
     "desliga_geo_sensor": {
         "desliga": 0
     },
     "envio_dados":{
-        "servidor":"35.199.78.129",
+        "servidor":"35.198.28.163",
         "url_envio":"/posicoes",
         "tempo_espera_envio": 120        
     }

@@ -113,7 +113,7 @@ class DadosColetados(BaseModel):
             try:
                 query = (DadosColetados.update({DadosColetados.transmitido:True})
                         .where(DadosColetados.id == tm['id']))
-                print(str(query))
+                #print(str(query))
                 query.execute()
                 
             except:
